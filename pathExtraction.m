@@ -4,17 +4,27 @@ clear all
 %Adding folders and subfolders to path
 addpath(genpath('actuation'));
 addpath(genpath('functions'));
-addpath(genpath('robot_tools'));
+addpath(genpath('/home/michael/Desktop/MATLAB Scripts/MagneticPlanner/robot_tools'));
 
 %%
 %All Coordinates are in sensor frame
 
 %U = [Bx,   By,     Bz,     dBxx,   dBxy,   dBxz,   dByy,       dByz]
-Uc = [0.0,  0.0,    0.0,    0.0,    0.1,    0.0,     0.0,       0.0];    %Current Magnetic Field (Will be replaced with current position)
-Ud = [0.0,  0.0,    0.0,    0.0,    0.0,    0.0,     0.1,       0.0];    %Desired Magnetic Field;
+Uc = [0.0;  0.0;    0.0;    0.1;    0.0;    0.0;     0.0;       0.0];    %Current Magnetic Field (Will be replaced with current position)
+Ud = [0.0;  0.01;    0.0;    0.0;    0.0;    0.0;     0.0;       0.0];    %Desired Magnetic Field;
 
-Xc = magPosition_alphas(Uc(4:8));    %Current Position
-Xd = magPosition_alphas(Ud(4:8));    %Desired Positon
+%Constants for Field Finder
+mu0 = 4*pi*1e-7;
+mu = 970.1;
+r_min = 0.1; %Minimum dist from magnet to origin
+r_max = 0.5; %Maximum dist from magnet to origin
+max_time = 3;
+
+[Xc,~,err_c,ic]  = field_optimise.find(Uc,mu,r_min,r_max,100,1e-12);
+[Xd,~,err_d,id]  = field_optimise.find(Ud,mu,r_min,r_max,100,1e-12);
+
+% Xc = magPosition_alphas(Uc(4:8));    %Current Position
+% Xd = magPosition_alphas(Ud(4:8));    %Desired Positon
 
 %% Plotting Current and Desired Positions of both Magnets
 figure;
