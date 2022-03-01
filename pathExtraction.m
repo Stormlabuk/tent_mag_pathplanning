@@ -10,8 +10,8 @@ addpath(genpath('C:\Users\elmbr\OneDrive - University of Leeds\MagneticPlanner\r
 %All Coordinates are in sensor frame
 
 %U = [Bx,   By,     Bz,     dBxx,   dBxy,   dBxz,   dByy,       dByz]
-Uc = [0.0,  0.0,    0.0,    0.1,    0.0,    0.0,     0.0,       0.0];    %Current Magnetic Field (Will be replaced with current position)
-Ud = [0.0,  0.0,    0.0,    0.0,    0.0,    0.3,     0.0,       0.0];    %Desired Magnetic Field;
+Uc = [0.0,  0.0,    0.0,    0.0,    0.1,    0.0,     0.0,       0.0];    %Current Magnetic Field (Will be replaced with current position)
+Ud = [0.0,  0.0,    0.0,    0.0,    0.0,    0.0,     0.1,       0.0];    %Desired Magnetic Field;
 
 Xc = magPosition_alphas(Uc(4:8));    %Current Position
 Xd = magPosition_alphas(Ud(4:8));    %Desired Positon
@@ -28,6 +28,9 @@ plot3(Xd(7),Xd(8),Xd(9), 'ro', 'MarkerSize',12);
 hold on;
 plot3(0,0,0,'.k','MarkerSize',40);
 
+xlabel('x', 'FontSize',24);
+ylabel('y', 'FontSize',24);
+zlabel('z', 'FontSize',24);
 
 grid on 
 %% Chaning to Spherical Coordinates 
@@ -79,7 +82,7 @@ alpha_d2 = asind(Xd(9)/p_d2);
 %% Creating a Path
 
 %Number of points in the path to be fixed for now
-path_points = 10;
+path_points = 30;
 
 p_path1 = linspace(p_c1, p_d1, path_points);
 p_path2 = linspace(p_c2, p_d2, path_points);
@@ -98,7 +101,7 @@ path_2 = zeros([path_points,3]);
 path_1(1,:) = [Xc(1), Xc(2), Xc(3)]./norm([Xc(1), Xc(2), Xc(3)]);
 path_2(1,:) = [Xc(7), Xc(8), Xc(9)]./norm([Xc(7), Xc(8), Xc(9)]);
 
-for a = 2:10
+for a = 2:path_points
     path_1(a,:) = path_1(a-1,:) * rotz((theta_path1(a) - theta_path1(a-1)));  
     path_1(a,:) = path_1(a,:) * rotx((alpha_path1(a) - alpha_path1(a-1))); %"-" here as going clockwise
     
@@ -108,7 +111,7 @@ end
 
 %Scaling by rho
 %TODO: Write this with matrix multiplication instead
-for a = 1:10
+for a = 1:path_points
     path_1(a,:) = path_1(a,:) * p_path1(a);
     path_2(a,:) = path_2(a,:) * p_path2(a);
 end
@@ -119,11 +122,11 @@ path_2(end,:) = [Xd(7), Xd(8), Xd(9)];
 
 %% Plotting Path
 hold on
-plot3(path_1(:,1), path_1(:,2), path_1(:,3), 'k--', 'LineWidth',2)
+plot3(path_1(:,1), path_1(:,2), path_1(:,3), ':k', 'LineWidth',2)
 hold on
-plot3(path_2(:,1), path_2(:,2), path_2(:,3), 'g--', 'LineWidth',2)
-legend('P1_{Current}','P2_{Current}','P1_{Desired}','P2_{Desired}', 'WorkSpace Center', 'Path 1', 'Path 2')
-
+plot3(path_2(:,1), path_2(:,2), path_2(:,3), ':g', 'LineWidth',2)
+lgd = legend('P1_{Current}','P2_{Current}','P1_{Desired}','P2_{Desired}', 'WorkSpace Center', 'Path 1', 'Path 2');
+lgd.FontSize = 14;
 
 %plotting the 0-axis
 plot3(linspace(-1,1,100), zeros([1,100]), zeros([1,100]), 'k:');
