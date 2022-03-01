@@ -2,9 +2,9 @@
 close all
 clear all
 %Adding folders and subfolders to path
-addpath(genpath('C:\Users\elmbr\OneDrive - University of Leeds\MagneticPlanner\actuation'));
-addpath(genpath('C:\Users\elmbr\OneDrive - University of Leeds\MagneticPlanner\functions'));
-addpath(genpath('C:\Users\elmbr\OneDrive - University of Leeds\MagneticPlanner\robot_tools'));
+addpath(genpath('actuation'));
+addpath(genpath('functions'));
+addpath(genpath('robot_tools'));
 
 %%
 %All Coordinates are in sensor frame
