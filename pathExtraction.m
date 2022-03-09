@@ -4,14 +4,14 @@ clear all
 %Adding folders and subfolders to path
 addpath(genpath('actuation'));
 addpath(genpath('functions'));
-addpath(genpath('/home/michael/Desktop/MATLAB Scripts/MagneticPlanner/robot_tools'));
-
+%addpath(genpath('/home/michael/Desktop/MATLAB Scripts/MagneticPlanner/robot_tools'));
+addpath(genpath('C:\Users\elmbr\OneDrive - University of Leeds\MagneticPlanner'));
 %%
 %All Coordinates are in sensor frame
 
 %U = [Bx,   By,     Bz,     dBxx,   dBxy,   dBxz,   dByy,       dByz]
 Uc = [0.0;  0.0;    0.0;    0.0;    0.1;    0.0;     0.0;       0.0];    %Current Magnetic Field (Will be replaced with current position)
-Ud = [0.005;  -0.003;    0.015;    0.25;    0.0;    0.0;     0.0;       0.0];
+Ud = [0.0;  0.0;    0.0;    0.0;    0.0;    0.0;     0.0;       0.1];
 
 %Constants for Field Finder
 mu0 = 4*pi*1e-7;
@@ -103,6 +103,27 @@ z_polar_path2 = linspace(z_c2,z_d2,path_points);
 [x_polar1,y_polar1,z_polar1] = pol2cart(theta_path1,p_path1,z_polar_path1);
 [x_polar2,y_polar2,z_polar2] = pol2cart(theta_path2,p_path2,z_polar_path2);
 
+%% Creating Vector X 
+
+X_planning = zeros(path_points, 12);
+%Setting the position of magnet 1
+X_planning(:,1:3) = [x_polar1; y_polar1; z_polar1]';
+%Setting the position of magnet 2
+X_planning(:,7:9) = [x_polar2; y_polar2; z_polar2]';
+
+%Setting the orientation of magnet 1 (without optimization for now)
+X_planning(1:path_points/2, 4:6) = repmat(Xc(4:6),1, path_points/2)';
+X_planning(path_points/2 + 1: end, 4:6) = repmat(Xd(4:6),1, path_points/2)';
+%Setting the orientation of magnet 2 (without optimization for now)
+X_planning(1:path_points/2, 10:12) = repmat(Xc(10:12),1, path_points/2)';
+X_planning(path_points/2 + 1: end, 10:12) = repmat(Xd(10:12),1, path_points/2)';
+
+%% Getting field at everypoint in path 
+U_path = zeros(10, path_points);
+
+for a = 1:path_points
+    U_path(:,a) = field(X_planning(a,:));
+end
 
 %% Plotting Path
 hold on
@@ -118,4 +139,25 @@ hj = plot3(zeros([1,100]), zeros([1,100]), linspace(-1,1,100), 'k:');
 
 lgd = legend([ha hb hc hd he hf hg], 'P1_{Current}','P2_{Current}','P1_{Desired}','P2_{Desired}', 'WorkSpace Center', 'Path 1', 'Path 2');
 lgd.FontSize = 14;
+
+%% Plotting Field at each point in path
+Uc_plot = repmat(Uc, 1, 30);
+Ud_plot = repmat(Ud, 1, 30);
+
+figure();
+for i = 1:8
+    subplot(4, 2, i)
+        plot(1:30, U_path(i, :), '--', 'LineWidth', 3.0)
+        hold on
+        plot(1:30, Uc_plot(i, :), 'go', 'LineWidth', 1.0)
+        hold on
+        plot(1:30, Ud_plot(i, :), 'ro', 'LineWidth', 1.0)
+        grid on
+        xlabel('Points in Path (s)')
+        ylabel(strcat('$U_', num2str(i),'$'), 'Interpreter', 'latex')  
+
+        if i == 1
+            legend('Path', 'Start', 'Desired')
+        end        
+end
 
