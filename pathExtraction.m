@@ -10,8 +10,8 @@ addpath(genpath('C:\Users\elmbr\OneDrive - University of Leeds\MagneticPlanner')
 %All Coordinates are in sensor frame
 
 %U = [Bx,   By,     Bz,     dBxx,   dBxy,   dBxz,   dByy,       dByz]
-Uc = [0.0;  0.0;    0.0;    0.0;    0.1;    0.0;     0.0;       0.0];    %Current Magnetic Field (Will be replaced with current position)
-Ud = [0.0;  0.0;    0.0;    0.0;    0.0;    0.0;     0.0;       0.1];
+Uc = [0.0;  0.01;    0.0;    0.0;    0.0;    0.0;     0.0;       0.0];    %Current Magnetic Field (Will be replaced with current position)
+Ud = [0.01;  0.0;    0.01;    0.0;    0.0;    0.0;     0.0;       0.0];
 
 %Constants for Field Finder
 mu0 = 4*pi*1e-7;
@@ -145,7 +145,8 @@ Uc_plot = repmat(Uc, 1, 30);
 Ud_plot = repmat(Ud, 1, 30);
 
 figure();
-for i = 1:8
+
+for i = 1:3
     subplot(4, 2, i)
         plot(1:30, U_path(i, :), '--', 'LineWidth', 3.0)
         hold on
@@ -160,4 +161,145 @@ for i = 1:8
             legend('Path', 'Start', 'Desired')
         end        
 end
+sgtitle("Before Optimisation", 'FontSize', 24)
 
+%% Analitical Solver for Pre Defined Path 
+
+%Creating a field path by linearly interpolating
+U_path = zeros(8, path_points);
+u_plan = zeros(6,path_points);
+
+% Creating a Vector X to write to CSV
+X_CSV = zeros(path_points,14);
+origin = [1,0,0];
+
+for i = 1:8
+   U_path(i,:) = linspace(Uc(i), Ud(i), path_points); 
+end
+% %Experimenting with sin waves
+% x_sin = 0:0.2125:2*pi;
+% U_path(1,:) = 0.02*sin(x_sin);% + 0.02;
+
+%finding mew analytically
+mu0 = 4*pi*1e-7; % air magnetic permeability
+for i = 1:path_points
+    r1 = X_planning(i,1:3)';
+    ro1 = norm(r1);
+    r2 = X_planning(i,7:9)';
+    ro2 = norm(r2);
+
+    M1 = (mu0/(4*pi*norm(ro1)^3)) * (3*(r1/ro1)*(r1/ro1)' - eye(3));
+    M2 = (mu0/(4*pi*norm(ro2)^3)) * (3*(r2/ro2)*(r2/ro2)' - eye(3));
+
+    M = [M1, M2];
+    %finding the magnetic moment
+    u_plan(:,i) = pinv(M) * U_path(1:3,i);
+    %normalizing
+    u_plan(1:3,i) = u_plan(1:3,i)/norm(u_plan(1:3,i)) * 970.1;
+    u_plan(4:6,i) = u_plan(4:6,i)/norm(u_plan(4:6,i)) * 970.1;
+
+    %Placing in Final X Matrix
+    X_planning(i, 4:6) = u_plan(1:3,i);
+    X_planning(i, 10:12) = u_plan(4:6,i);
+
+    %Vector to write to CSV
+    X_CSV(i,1:3) = X_planning(i,1:3);
+    X_CSV(i,8:10) = X_planning(i,7:9);
+    %changing from moment to rot mat
+    C = cross(origin, u_plan(1:3,i)) ; 
+    D = dot(origin, u_plan(1:3,i)) ;
+    NP0 = norm(origin) ; % used for scaling
+    if ~all(C==0) % check for colinearity    
+        Z = [0 -C(3) C(2); C(3) 0 -C(1); -C(2) C(1) 0] ; 
+        R = (eye(3) + Z + Z^2 * (1-D)/(norm(C)^2)) / NP0^2 ; % rotation matrix
+    else
+        R = sign(D) * (norm(u_plan(1:3,i)) / NP0) ; % orientation and scaling
+    end
+    % R is the rotation matrix from p0 to p1, so that (except for round-off errors) ...
+    X_CSV(i, 4:7) = rotm2quat(R);
+
+    %changing from moment to rot mat
+    C = cross(origin, u_plan(4:6,i)) ; 
+    D = dot(origin, u_plan(4:6,i)) ;
+    NP0 = norm(origin) ; % used for scaling
+    if ~all(C==0) % check for colinearity    
+        Z = [0 -C(3) C(2); C(3) 0 -C(1); -C(2) C(1) 0] ; 
+        R = (eye(3) + Z + Z^2 * (1-D)/(norm(C)^2)) / NP0^2 ; % rotation matrix
+    else
+        R = sign(D) * (norm(u_plan(4:6,i)) / NP0) ; % orientation and scaling
+    end
+    % R is the rotation matrix from p0 to p1, so that (except for round-off errors) ...
+    X_CSV(i, 11:14) = rotm2quat(R);
+
+
+
+end
+
+
+%% Optimisation
+% 
+% lb = zeros([6,1]);
+% ub = 970.1 * ones([6,1]);
+% m0 = [Xc(4:6); Xc(10:12)];
+% [c, ceq] = nlcon(m0);
+% 
+% A = [];
+% B = [];
+% Aeq = [];
+% Beq = [];
+% nonlincon = @nlcon;
+% 
+% fval(1) = 0;
+% 
+% m = zeros([6,path_points]);
+% m(:,1) = m0;
+% for i = 2:path_points
+%     rOld = [X_planning(i-1,1:3)' ; X_planning(i-1,7:9)']; 
+%     r = [X_planning(i,1:3)' ; X_planning(i,7:9)'];
+%     mOld = [X_planning(i-1,4:6)' ; X_planning(i-1,10:12)'];
+%     m0 = m(:,i-1);
+% 
+%    [m(:,i),fval(i)] = fmincon(@(m)fieldObjective(m, mOld, r, rOld, Ud), m0, A, B, Aeq, Beq, lb, ub, nonlincon);
+% end
+% 
+% %Setting the last value to that of the optimisation 
+% m(:,end) = [Xd(4:6);Xd(10:12)];
+% 
+% % Placing the orientation inside the X vector;
+% X_planning(:,4:6) = m(1:3,:)';
+% X_planning(:,10:12) = m(4:6,:)';
+% 
+% % Xnew = [r(1:3); m(1:3,30); r(4:6); m(4:6,30)]; 
+% % fieldnew = field(Xnew);
+
+%% Plotting Field at each point in path
+U_final = zeros(10, path_points);
+
+for a = 1:path_points
+    U_final(:,a) = field(X_planning(a,:));
+end
+
+figure();
+for i = 1:3
+    subplot(4, 2, i)
+        plot(1:30, U_path(i, :), '--', 'LineWidth', 1.0)
+        hold on
+        plot(1:30, Uc_plot(i, :), 'go', 'LineWidth', 1.0)
+        hold on
+        plot(1:30, Ud_plot(i, :), 'ro', 'LineWidth', 1.0)
+        hold on
+        plot(1:30, U_final(i,:), 'k--', 'LineWidth', 3.0)
+        grid on
+        xlabel('Points in Path (s)')
+        ylabel(strcat('$U_', num2str(i),'$'), 'Interpreter', 'latex')  
+
+        if i == 1
+            legend('Path', 'Start', 'Desired', 'Path Followed')
+        end        
+end
+sgtitle("After Optimisation", 'FontSize', 24)
+
+
+% figure;
+% plot(fval);
+% title("Error", 'FontSize',20)
