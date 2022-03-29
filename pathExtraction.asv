@@ -10,8 +10,8 @@ addpath(genpath('C:\Users\elmbr\OneDrive - University of Leeds\MagneticPlanner')
 %All Coordinates are in sensor frame
 
 %U = [Bx,   By,     Bz,     dBxx,   dBxy,   dBxz,   dByy,       dByz]
-Uc = [0.01;  0.0;    0.0;    0.0;    0.0;    0.3;     0.0;       0.0];    %Current Magnetic Field (Will be replaced with current position)
-Ud = [0.0;  0.0;    0.0;    -0.15;    0.0;    0.0;     0.02;       0.0];
+Uc = [0.0;  0.0;    0.0;    0.1;    0.0;    0.0;     0.0;       0.0];    %Current Magnetic Field (Will be replaced with current position)
+Ud = [0.0;  0.0;    0.0;    0.0;    0.1;    0.0;     0.0;       0.0];
 
 %Constants for Field Finder
 mu0 = 4*pi*1e-7;
@@ -84,7 +84,7 @@ end
 
 
 %% Changing to Polar Coords
-path_points = 6;
+path_points = 30;
 
 %rho is the distance from the origin to a point in the x-y plane.
 p_path1 = linspace(p_c1, p_d1, path_points);
@@ -141,18 +141,18 @@ lgd = legend([ha hb hc hd he hf hg], 'P1_{Current}','P2_{Current}','P1_{Desired}
 lgd.FontSize = 14;
 
 %% Plotting Field at each point in path
-Uc_plot = repmat(Uc, 1, path_points);
-Ud_plot = repmat(Ud, 1, path_points);
+Uc_plot = repmat(Uc, 1, 30);
+Ud_plot = repmat(Ud, 1, 30);
 
 figure();
 
-for i = 1:8
+for i = 1:3
     subplot(4, 2, i)
-        plot(1:path_points, U_path(i, :), '--', 'LineWidth', 3.0)
+        plot(1:30, U_path(i, :), '--', 'LineWidth', 3.0)
         hold on
-        plot(1:path_points, Uc_plot(i, :), 'go', 'LineWidth', 1.0)
+        plot(1:30, Uc_plot(i, :), 'go', 'LineWidth', 1.0)
         hold on
-        plot(1:path_points, Ud_plot(i, :), 'ro', 'LineWidth', 1.0)
+        plot(1:30, Ud_plot(i, :), 'ro', 'LineWidth', 1.0)
         grid on
         xlabel('Points in Path (s)')
         ylabel(strcat('$U_', num2str(i),'$'), 'Interpreter', 'latex')  
@@ -196,18 +196,17 @@ for i = 1:path_points
 
     %Gradients 
     N = [];
-        for j = 1:6
+        for i = 1:6
 
             %Required magnet orientation
             mu_sub = zeros(6,1);
-            mu_sub(j) = 1;
+            mu_sub(i) = 1;
 
             Id = eye(3);
 
             %Dipole Model for Gradients
-            jacob = (3* mu0/(4*pi*norm(ro1)^4)) * ...
-                ((Id - 5*((r1/ro1)*(r1/ro1)'))*((r1/ro1).'*mu_sub(1:3)) + mu_sub(1:3)*(r1/ro1)' + (r1/ro1)*mu_sub(1:3)') ...
-                + (3* mu0/(4*pi*norm(ro2)^4)) * ((Id - 5*((r2/ro2)*(r2/ro2)'))*((r2/ro2).'*mu_sub(4:6)) + mu_sub(4:6)*(r2/ro2)' + (r2/ro2)*mu_sub(4:6)');
+            jacob = (Id - 5*((r1/ro1)*(r1/ro1)'))*((r1/ro1).'*mu_sub(1:3)) + mu_sub(1:3)*(r1/ro1)' + (r1/ro1)*mu_sub(1:3)' ...
+                + (Id - 5*(r2*r2'))*(r2.'*mu_sub(4:6)) + mu_sub(4:6)*r2' + r2*mu_sub(4:6)';
             
             dB = [jacob(1, 1); jacob(1, 2); jacob(1, 3); jacob(2, 2); jacob(2, 3)];
             N = [N, dB];
@@ -215,17 +214,10 @@ for i = 1:path_points
 
 
     %finding the magnetic moment
-    P = [M; N];
-
-    u_plan(:,i) = pinv(P) * U_path(:,i);
+    u_plan(:,i) = pinv(M) * U_path(1:3,i);
     %normalizing
     u_plan(1:3,i) = u_plan(1:3,i)/norm(u_plan(1:3,i)) * 970.1;
     u_plan(4:6,i) = u_plan(4:6,i)/norm(u_plan(4:6,i)) * 970.1;
-
-%     u_plan(:,i) = pinv(M) * U_path(1:3,i);
-%     %normalizing
-%     u_plan(1:3,i) = u_plan(1:3,i)/norm(u_plan(1:3,i)) * 970.1;
-%     u_plan(4:6,i) = u_plan(4:6,i)/norm(u_plan(4:6,i)) * 970.1;
 
     %Placing in Final X Matrix
     X_planning(i, 4:6) = u_plan(1:3,i);
@@ -309,15 +301,15 @@ for a = 1:path_points
 end
 
 figure();
-for i = 1:8
+for i = 1:3
     subplot(4, 2, i)
-        plot(1:path_points, U_path(i, :), '--', 'LineWidth', 1.0)
+        plot(1:30, U_path(i, :), '--', 'LineWidth', 1.0)
         hold on
-        plot(1:path_points, Uc_plot(i, :), 'go', 'LineWidth', 1.0)
+        plot(1:30, Uc_plot(i, :), 'go', 'LineWidth', 1.0)
         hold on
-        plot(1:path_points, Ud_plot(i, :), 'ro', 'LineWidth', 1.0)
+        plot(1:30, Ud_plot(i, :), 'ro', 'LineWidth', 1.0)
         hold on
-        plot(1:path_points, U_final(i,:), 'k--', 'LineWidth', 3.0)
+        plot(1:30, U_final(i,:), 'k--', 'LineWidth', 3.0)
         grid on
         xlabel('Points in Path (s)')
         ylabel(strcat('$U_', num2str(i),'$'), 'Interpreter', 'latex')  
