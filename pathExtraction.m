@@ -9,9 +9,9 @@ addpath(genpath('C:\Users\elmbr\OneDrive - University of Leeds\MagneticPlanner')
 %%
 %All Coordinates are in sensor frame
 
-%U = [Bx,   By,     Bz,     dBxx,   dBxy,   dBxz,   dByy,       dByz]
-Uc = [0.0;  0.005;    0.0;    0.0;    0.0;    0.0;     0.0;       0.0];    %Current Magnetic Field (Will be replaced with current position)
-Ud = [0.0;  0.0;    0.0;    0.0;    0.0;    0.0;     0.0;       0.0];
+%U = [Bx,   By,     Bz,     dBxx,   dBxy,   dBxz,   dByy,       dByz,   mu1,    mu2]
+Uc = [0.0;  0.005;    0.0;    0.0;    0.0;    0.0;     0.0;       0.0;  970.1;  970.1];    %Current Magnetic Field (Will be replaced with current position)
+Ud = [0.0;  0.0;    0.0;    0.1;    0.0;    0.0;     0.0;       0.0;    970.1;  970.1];
 
 %Constants for Field Finder
 mu0 = 4*pi*1e-7;
@@ -23,20 +23,20 @@ max_time = 3;
 %Checking if moving to zero position
 if norm(Uc) == 0
     Xc = [-0.35; -1.02; 0.19; 827.4953; 145.5150; -485.0500; 0.35; 1.02; 0.19; -827.4953; -145.5150; -485.0500];
-    [Xd,~,err_d,id]  = field_optimise.find(Ud,mu,r_min,r_max,100,1e-12);
+    %[Xd,~,err_d,id]  = field_optimise.find(Ud,mu,r_min,r_max,100,1e-12);
+    [UFinal, Xd] = fieldSearchMBGP(Ud);
 
 elseif norm(Ud) == 0
     Xd =[-0.35; -1.02; 0.19; 827.4953; 145.5150; -485.0500; 0.35; 1.02; 0.19; 827.4953; -145.5150; -485.0500];
-    [Xc,~,err_c,ic]  = field_optimise.find(Uc,mu,r_min,r_max,100,1e-12);
+    %[Xc,~,err_c,ic]  = field_optimise.find(Uc,mu,r_min,r_max,100,1e-12);
+    [UFinal, Xc] = fieldSearchMBGP(Uc);
 else
-
-    [Xc,~,err_c,ic]  = field_optimise.find(Uc,mu,r_min,r_max,100,1e-12);
-    [Xd,~,err_d,id]  = field_optimise.find(Ud,mu,r_min,r_max,100,1e-12);
+    [UFinal, Xc] = fieldSearchMBGP(Uc);
+    [UFinal, Xd] = fieldSearchMBGP(Ud);
+    %[Xc,~,err_c,ic]  = field_optimise.find(Uc,mu,r_min,r_max,100,1e-12);
+    %[Xd,~,err_d,id]  = field_optimise.find(Ud,mu,r_min,r_max,100,1e-12);
     % robot_ik.displayState(Xd);
     
-    
-    % Xc = magPosition_alphas(Uc(4:8)');    %Current Position
-    % Xd = magPosition_alphas(Ud(4:8)');    %Desired Positon
 end
 
 
