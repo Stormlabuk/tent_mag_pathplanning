@@ -181,19 +181,19 @@ sgtitle("Planned Field for Full Path", 'FontSize', 24)
 
 
 %% Plotting Forces and torques
-m1 = [0, -1, 0]%; * 1050423;
-m2 = [0, 0, 1]%; * 1050423;
+m1 = [0, -1, 0];%; * 1050423;
+m2 = [0, 0, 1];%; * 1050423;
 
 % Load Cell 1
 m = m1;
 
 S = zeros([6,8]); 
-S(1,7:8) = [-m(3), m(2)];
-S(2,6:8) = [m(3), 0, -m(1)];
-S(3,6:8) = [-m(2), m(1), 0];
-S(4,1:3) = [m(1), m(2), m(3)];
-S(5,2:5) = [m(1), 0, m(2), m(3)];
-S(6,1:5) = [-m(3), 0, m(1), -m(3), m(2)];
+S(1,1:3) = [0, -m(3), m(2)];
+S(2,1:3) = [m(3), 0, -m(1)];
+S(3,1:3) = [-m(2), m(1), 0];
+S(4,4:8) = [m(1), m(2), m(3), 0, 0];
+S(5,4:8) = [0, m(1), 0, m(2), m(3)];
+S(6,4:8) = [-m(3), 0, m(1), -m(3), m(2)];
 
 w1_des = S*Ud_plotFinal(1:8,:);
 w1_plan = S*U_final(1:8,:);
@@ -222,12 +222,6 @@ for i = 1:6
         xlabel('Points in Path (s)', 'FontSize', 14)
         ylabel(strcat('$w_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
 
-%         if i <= 3
-%             ylim([-0.01 0.01]);
-%         else
-%             ylim([-0.1 0.1]);
-%         end
-
         grid on;
 
         if i == 1
@@ -244,12 +238,6 @@ for i = 1:6
         plot(1:path_points*count, w2_des(i, :)', 'r--', 'LineWidth', 2.0)
         xlabel('Points in Path (s)', 'FontSize', 14)
         ylabel(strcat('$w_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
-
-%         if i <= 3
-%             ylim([-0.01 0.01]);
-%         else
-%             ylim([-0.1 0.1]);
-%         end
 
         grid on;
 

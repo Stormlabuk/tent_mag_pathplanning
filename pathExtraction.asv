@@ -181,8 +181,8 @@ sgtitle("Planned Field for Full Path", 'FontSize', 24)
 
 
 %% Plotting Forces and torques
-m1 = [0, -1, 0] * 1050423;
-m2 = [0, 0, 1] * 1050423;
+m1 = [0, -1, 0];%; * 1050423;
+m2 = [0, 0, 1];%; * 1050423;
 
 % Load Cell 1
 m = m1;
@@ -216,25 +216,45 @@ w2_plan = S*U_final(1:8,:);
 figure();
 for i = 1:6
     subplot(3, 2, i)
-        plot(1:path_points*count, U_pathFinal(i, :)', '--', 'LineWidth', 1.0)
+        plot(1:path_points*count, w1_plan(i, :)', 'k', 'LineWidth', 1.0)
         hold on
-        plot(1:path_points*count, Uc_plotFinal(i, :)', 'ro', 'LineWidth', 1.0)
-        hold on
-        plot(1:path_points*count, Ud_plotFinal(i, :)', 'go', 'LineWidth', 1.0)
-        hold on
-        plot(1:path_points*count, U_final(i,:), 'k--', 'LineWidth', 3.0)
-        grid on
+        plot(1:path_points*count, w1_des(i, :)', 'r--', 'LineWidth', 2.0)
         xlabel('Points in Path (s)', 'FontSize', 14)
-        ylabel(strcat('$U_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+        ylabel(strcat('$w_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
 
-        if i <= 3
-            ylim([-0.01 0.01]);
-        else
-            ylim([-0.1 0.1]);
-        end
+%         if i <= 3
+%             ylim([-0.01 0.01]);
+%         else
+%             ylim([-0.1 0.1]);
+%         end
+
+        grid on;
 
         if i == 1
-            legend('Path', 'Start', 'Desired', 'Path Followed', 'FontSize', 12)
+            legend('Wrench', 'Desired', 'FontSize', 12)
         end        
 end
-sgtitle("Planned Field for Full Path", 'FontSize', 24)
+sgtitle("Planned Wrench w1 for Full Path", 'FontSize', 24)
+
+figure();
+for i = 1:6
+    subplot(3, 2, i)
+        plot(1:path_points*count, w2_plan(i, :)', 'k', 'LineWidth', 1.0)
+        hold on
+        plot(1:path_points*count, w2_des(i, :)', 'r--', 'LineWidth', 2.0)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$w_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+
+%         if i <= 3
+%             ylim([-0.01 0.01]);
+%         else
+%             ylim([-0.1 0.1]);
+%         end
+
+        grid on;
+
+        if i == 1
+            legend('Wrench', 'Desired', 'FontSize', 12)
+        end        
+end
+sgtitle("Planned Wrench w2 for Full Path", 'FontSize', 24)
