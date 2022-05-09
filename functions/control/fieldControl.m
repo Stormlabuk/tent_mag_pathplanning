@@ -57,6 +57,7 @@ Id = eye(length(X));
 i = 2;
 stop = 0;
 
+%while i < numIt %&& stop == 0
 while i < numIt %&& stop == 0
 %for i = 2:numIt
     %% Task 1: Field Control
