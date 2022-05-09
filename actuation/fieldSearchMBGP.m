@@ -118,7 +118,35 @@ if (norm(Ud(4:8)) ~= 0)   %checking asking for a gradient
     end
 
 else  %If only asking for field
-    X = [-0.35; -1.02; 0.19; 827.4953; 145.5150; -485.0500; 0.35; 1.02; 0.19; -827.4953; -145.5150; -485.0500]; %Zero Position 
+
+    %Estimating an Initial Position to start search from
+    x1 = [1; 0; 0];
+    x2 = -x1;
+    id = eye(6);
+    
+    dU_dm = [];
+    for i = 1:6
+        m1 = mu*id(1:3, i);
+        m2 = mu*id(4:6, i);
+        X = [x1; m1; x2; m2];
+    
+        dU_dm = [dU_dm, field_2(mu0, X)];
+    end
+    
+    m = dU_dm\Ud(1:end - 2);
+    ro1 = (mu/norm(m(1:3)))^(1/3) / 10;     %Added div(10) When doing planner (wasnt in Gio's code), not sure why but it works
+    ro2 = (mu/norm(m(1:3)))^(1/3) / 10;
+    m(1:3) = m(1:3)/norm(m(1:3))*mu;
+    m(4:6) = m(4:6)/norm(m(4:6))*mu;
+    x1 = ro1*x1;
+    x2 = ro2*x2;
+    x = [x1; m(1:3); x2; m(4:6)];
+    
+    % Constants
+    Id = eye(length(x));
+    
+    % Initial Conditions
+    X(:, 1) = x;
     [XFinal(:), UFinal(:), errFinal] = fieldControl(Ud, X, K, numIt, step, k0);
 end
 

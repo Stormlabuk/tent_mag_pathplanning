@@ -8,6 +8,8 @@ u_plan = zeros(6,path_points);
 X_CSV = zeros(path_points,14);
 origin = [1,0,0];
 
+rot45 = rotz(-45);
+
 %finding mew analytically
 mu0 = 4*pi*1e-7; % air magnetic permeability
 for i = 1:path_points
@@ -68,9 +70,9 @@ for i = 1:path_points
     X_planning(i, 4:6) = u_plan(1:3,i);
     X_planning(i, 10:12) = u_plan(4:6,i);
 
-    %Vector to write to CSV
-    X_CSV(i,1:3) = X_planning(i,1:3);
-    X_CSV(i,8:10) = X_planning(i,7:9);
+    %Vector to write to CSV -- Rotating to New Reference Frame
+    X_CSV(i,1:3) = rot45*X_planning(i,1:3)';
+    X_CSV(i,8:10) = rot45*X_planning(i,7:9)';
     %changing from moment to rot mat
     C = cross(origin, u_plan(1:3,i)) ; 
     D = dot(origin, u_plan(1:3,i)) ;
@@ -82,7 +84,9 @@ for i = 1:path_points
         R = sign(D) * (norm(u_plan(1:3,i)) / NP0) ; % orientation and scaling
     end
     % R is the rotation matrix from p0 to p1, so that (except for round-off errors) ...
-    X_CSV(i, 4:7) = rotm2quat(R);
+    %Rotating to new reference frame
+    Rnew = rot45 * R;
+    X_CSV(i, 4:7) = rotm2quat(Rnew);
 
     %changing from moment to rot mat
     C = cross(origin, u_plan(4:6,i)) ; 
@@ -95,6 +99,9 @@ for i = 1:path_points
         R = sign(D) * (norm(u_plan(4:6,i)) / NP0) ; % orientation and scaling
     end
     % R is the rotation matrix from p0 to p1, so that (except for round-off errors) ...
+    %Rotating to new reference frame
+    Rnew = rot45 * R;
+    X_CSV(i, 4:7) = rotm2quat(Rnew);
     X_CSV(i, 11:14) = rotm2quat(R);
 
 end

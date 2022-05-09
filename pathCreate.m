@@ -9,15 +9,17 @@ function [X_planning, polarpath_1, polarpath_2] = pathCreate(Xc, Xd, path_points
 [theta_d2, p_d2, z_d2] = cart2pol(Xd(7),Xd(8),Xd(9));
  
 %If angle is negative add 360 (so that we go round the other way - taking shortest path)
-if sign(theta_c1) == -1 && sign(theta_d1) == 1
+%need to round answers, otherwise when theta is close to 0 (<e-5) will give
+%errors
+if sign(round(theta_c1,4)) == -1 && sign(round(theta_d1,4)) == 1
     theta_c1 = theta_c1 + 2*pi;
-elseif sign(theta_c1) == 1 && sign(theta_d1) == -1
+elseif sign(round(theta_c1,4)) == 1 && sign(round(theta_d1,4)) == -1
     theta_d1 = theta_d1 + 2*pi;
 end
 
-if sign(theta_c2) == -1 && sign(theta_d2) == 1
+if sign(round(theta_c2,4)) == -1 && sign(round(theta_d2,4)) == 1
     theta_c2 = theta_c2 + 2*pi;
-elseif sign(theta_c2) == 1 && sign(theta_d2) == -1
+elseif sign(round(theta_c2,4)) == 1 && sign(round(theta_d2,4)) == -1
     theta_d2 = theta_d2 + 2*pi;
 end
 
