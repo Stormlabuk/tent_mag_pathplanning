@@ -9,16 +9,26 @@ addpath(genpath('C:\Users\elmbr\OneDrive - University of Leeds\MagneticPlanner')
 %%
 %All Coordinates are in sensor frame
 
+%Enter Desired End Effector Positions
+%Xdes = [[-0.35;     -1.02;   0.19;  827.4953;   145.5150;   -485.0500;  0.35;    1.02;   0.19;   -827.4953;  -145.5150;  -485.0500], ...
+%          [0.1909;   -0.1909; 0.00; -685.9643;  -685.9643;    0.0;      -0.1909;  0.1909; 0.00;    685.9643;   685.9643;   0.0], ...         %f2y
+%          [0.25;      0;      0.0;  -970.1;      0.0;         0.0;      -0.25;     0.0;   0.00;   -970.1;      0.0;        0.0], ...         %t1y
+%          [0.23;      0;     -0.23;   686.0814;  -0.062;      685.8472; -0.23;     0;     0.22;   -685.8472;   0.0904;    -686.0613], ...    %f1z
+%          [0.3;      0;       0.0;    0.;        -0.0;       -970.1;    -0.3;      0;     0.00;    0;          0.0;        970.1]];          %f1x
+
+Xdes = [];
+
+%If no positions are given use desired Fields. 
 %U = [Bx,       By,        Bz,         dBxx,      dBxy,        dBxz,       dByy,       dByz,   mu1,    mu2]
 Uc = [0.0;      0.0;       0.0;        0.0;        0.0;        0.0;        0.0;        0.0;    970.1;  970.1];    %Current Magnetic Field (Will be replaced with current position)
-Ud = [[0.0;     0.00;      0.0022483;  0.0;        0.0;        0.1;        0.0;        0.0;    970.1;  970.1], ...
+Ud = [[0.0;     0.0;       0.0;        0.0;        0.0;        0.1;        0.0;        0.0;    970.1;  970.1], ...
       [0.0;     0.0;       0.0;        0.0;        0.0;        0.0;        0.0;        0.1;    970.1;  970.1], ...
-      [0.00225; 0.0;       0.0;       -0.1;        0.0;        0.0;        0.0;        0.0;    970.1;  970.1], ...
+      [0.0;     0.0;       0.0;       -0.1;        0.0;        0.0;       -0.1;        0.0;    970.1;  970.1], ...
       [0.0;    -0.01;      0.0;        0.0;        0.0;        0.0;        0.0;        0.0;    970.1;  970.1], ...
       [0.01;    0.0;       0.0;        0.0;        0.0;        0.0;        0.0;        0.0;    970.1;  970.1], ...
-      [-0.001;  0.0036;   -0.000167;   0.0;       -0.1;        0.0;        0.0;        0.0;    970.1;  970.1], ...
-      [-0.005; -0.00125;   0.0011;     0.1;        0.0;        0.0;       -0.1;        0.0;    970.1;  970.1], ...
-      [-0.0024; 0.0017;   -0.0088;     0.0;        0.0;        0.0;        0.0;        0.0;    970.1;  970.1]];
+      [0.0;     0.0;       0.0;        0.0;       -0.1;        0.0;        0.0;        0.0;    970.1;  970.1], ...
+      [0.0;     0.0;       0.0;        0.0;        0.0;        0.0;       -0.1;        0.0;    970.1;  970.1], ...
+      [0.0;     0.0;      -0.01;       0.0;        0.0;        0.0;        0.0;        0.0;    970.1;  970.1]];
 
 %Constants for Field Finder
 mu0 = 4*pi*1e-7;
@@ -28,10 +38,16 @@ r_max = 1; %Maximum dist from magnet to origin
 max_time = 3;
 
 U_request = cat(2,Uc,Ud); %Creating one matrix for all the Fields we're requestion
-[~, numFields] = size(Ud);
+%Checking number of diff fields/positions to go to
+if (isempty(Xdes) == 1 )
+    [~, numFields] = size(Ud);
+else
+    [~, numFields] = size(Xdes);
+    numFields = numFields -1; 
+end
 
 %Matrixes with the full Path for all requested fields. 
-path_points = 6;
+path_points = 10;
 u_planFinal =  zeros([path_points*numFields, 6]);
 X_planningFinal = zeros([path_points*numFields, 12]);
 X_CSVFinal = zeros([path_points*numFields, 14]);
@@ -42,26 +58,37 @@ U_pathFinal = zeros([8, path_points*numFields]);
 
 for count = 1:numFields
 
-    Uc = U_request(:,count);
-    Ud = U_request(:,count + 1);
+    % If no desired Points are given, find end points based on desired fields
+    if (isempty(Xdes) == 1 )
 
-    %Checking if moving to zero position
-    if norm(Uc(1:8)) == 0
-        Xc = [-0.35; -1.02; 0.19; 827.4953; 145.5150; -485.0500; 0.35; 1.02; 0.19; -827.4953; -145.5150; -485.0500];
-        %[Xd,~,err_d,id]  = field_optimise.find(Ud,mu,r_min,r_max,100,1e-12);
-        [Ud_found, Xd] = fieldSearchMBGP(Ud);
+        Uc = U_request(:,count);
+        Ud = U_request(:,count + 1);
     
-    elseif norm(Ud(1:8)) == 0
-        Xd =[-0.35; -1.02; 0.19; 827.4953; 145.5150; -485.0500; 0.35; 1.02; 0.19; 827.4953; -145.5150; -485.0500];
-        %[Xc,~,err_c,ic]  = field_optimise.find(Uc,mu,r_min,r_max,100,1e-12);
-        [Uc_found, Xc] = fieldSearchMBGP(Uc);
-    else
-        [Uc_found, Xc] = fieldSearchMBGP(Uc);
-        [Ud_found, Xd] = fieldSearchMBGP(Ud);
-        %[Xc,~,err_c,ic]  = field_optimise.find(Uc,mu,r_min,r_max,100,1e-12);
-        %[Xd,~,err_d,id]  = field_optimise.find(Ud,mu,r_min,r_max,100,1e-12);
-        % robot_ik.displayState(Xd);
+        %Checking if moving to zero position
+        if norm(Uc(1:8)) == 0
+            Xc = [-0.35; -1.02; 0.19; 827.4953; 145.5150; -485.0500; 0.35; 1.02; 0.19; -827.4953; -145.5150; -485.0500];
+            %[Xd,~,err_d,id]  = field_optimise.find(Ud,mu,r_min,r_max,100,1e-12);
+            [Ud_found, Xd] = fieldSearchMBGP(Ud);
         
+        elseif norm(Ud(1:8)) == 0
+            Xd =[-0.35; -1.02; 0.19; 827.4953; 145.5150; -485.0500; 0.35; 1.02; 0.19; 827.4953; -145.5150; -485.0500];
+            %[Xc,~,err_c,ic]  = field_optimise.find(Uc,mu,r_min,r_max,100,1e-12);
+            [Uc_found, Xc] = fieldSearchMBGP(Uc);
+        else
+            [Uc_found, Xc] = fieldSearchMBGP(Uc);
+            [Ud_found, Xd] = fieldSearchMBGP(Ud);
+            %[Xc,~,err_c,ic]  = field_optimise.find(Uc,mu,r_min,r_max,100,1e-12);
+            %[Xd,~,err_d,id]  = field_optimise.find(Ud,mu,r_min,r_max,100,1e-12);
+            % robot_ik.displayState(Xd);
+            
+        end
+
+    else
+        Xc = Xdes(:,count);
+        Uc = field(Xc);
+
+        Xd = Xdes(:,count + 1);
+        Ud = field(Xd);
     end
 
      %% Creating a Linear path in polar space
@@ -70,7 +97,7 @@ for count = 1:numFields
 
     %% Plotting Start (Current) and Desired Positions of both Magnets
     figure(1);
-    subplot((numFields)/2 ,2, count)
+    subplot(round((numFields)/2) ,2, count)
     ha = plot3(Xc(1),Xc(2),Xc(3), 'b*', 'MarkerSize',12);
     hold on;
     hb = plot3(Xc(7),Xc(8),Xc(9), 'bo', 'MarkerSize',12);
@@ -132,7 +159,7 @@ for count = 1:numFields
     
     [u_plan, X_planning, X_CSV] = analyticalMewSolve(Xc, Xd, X_planning, U_path);
 
-    u_planFinal((path_points*(count-1) + 1):(path_points*count), :) =  u_plan;
+    u_planFinal((path_points*(count-1) + 1):(path_points*count), :) =  u_plan';
     X_planningFinal((path_points*(count-1) + 1):(path_points*count), :) = X_planning;
     X_CSVFinal((path_points*(count-1) + 1):(path_points*count), :) = X_CSV;
     
@@ -181,8 +208,8 @@ sgtitle("Planned Field for Full Path", 'FontSize', 24)
 
 
 %% Plotting Forces and torques
-m1 = [0, -1, 0];%; * 1050423;
-m2 = [0, 0, 1];%; * 1050423;
+m1 = [0, 0, 1];%; * 1050423;
+m2 = [0, -1, 0];%; * 1050423;
 
 % Load Cell 1
 m = m1;
@@ -195,21 +222,23 @@ S(4,4:8) = [m(1), m(2), m(3), 0, 0];
 S(5,4:8) = [0, m(1), 0, m(2), m(3)];
 S(6,4:8) = [-m(3), 0, m(1), -m(3), m(2)];
 
-w1_des = S*Ud_plotFinal(1:8,:);
+%w1_des = S*Ud_plotFinal(1:8,:);
+w1_des = S*U_pathFinal;
 w1_plan = S*U_final(1:8,:);
 
 %Load Cell 2
 m = m2;
 
 S = zeros([6,8]); 
-S(1,7:8) = [-m(3), m(2)];
-S(2,6:8) = [m(3), 0, -m(1)];
-S(3,6:8) = [-m(2), m(1), 0];
-S(4,1:3) = [m(1), m(2), m(3)];
-S(5,2:5) = [m(1), 0, m(2), m(3)];
-S(6,1:5) = [-m(3), 0, m(1), -m(3), m(2)];
+S(1,1:3) = [0, -m(3), m(2)];
+S(2,1:3) = [m(3), 0, -m(1)];
+S(3,1:3) = [-m(2), m(1), 0];
+S(4,4:8) = [m(1), m(2), m(3), 0, 0];
+S(5,4:8) = [0, m(1), 0, m(2), m(3)];
+S(6,4:8) = [-m(3), 0, m(1), -m(3), m(2)];
 
-w2_des = S*Ud_plotFinal(1:8,:);
+%w2_des = S*Ud_plotFinal(1:8,:);
+w2_des = S*U_pathFinal;
 w2_plan = S*U_final(1:8,:);
 
 % Plotting
@@ -220,7 +249,13 @@ for i = 1:6
         hold on
         plot(1:path_points*count, w1_des(i, :)', 'r--', 'LineWidth', 2.0)
         xlabel('Points in Path (s)', 'FontSize', 14)
-        ylabel(strcat('$w_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+
+        if i < 4
+            ylabel(strcat('$\tau_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+        else
+            ylabel(strcat('$f_', num2str(i-3),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+        end
+       
 
         grid on;
 
@@ -237,7 +272,13 @@ for i = 1:6
         hold on
         plot(1:path_points*count, w2_des(i, :)', 'r--', 'LineWidth', 2.0)
         xlabel('Points in Path (s)', 'FontSize', 14)
-        ylabel(strcat('$w_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+
+        if i < 4
+            ylabel(strcat('$\tau_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+        else
+            ylabel(strcat('$f_', num2str(i-3),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+        end
+       
 
         grid on;
 

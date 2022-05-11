@@ -101,8 +101,14 @@ for i = 1:path_points
     % R is the rotation matrix from p0 to p1, so that (except for round-off errors) ...
     %Rotating to new reference frame
     Rnew = rot45 * R;
-    X_CSV(i, 4:7) = rotm2quat(Rnew);
-    X_CSV(i, 11:14) = rotm2quat(R);
+
+    %%Dont know why was changinh rotation of robot 1 again
+%     X_CSV(i, 4:7) = rotm2quat(Rnew);
+%     X_CSV(i, 11:14) = rotm2quat(R);
+
+    %%Changed to this on the 10/05/2022
+    %X_CSV(i, 4:7) = rotm2quat(Rnew);
+    X_CSV(i, 11:14) = rotm2quat(Rnew);
 
 end
 
