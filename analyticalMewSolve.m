@@ -102,7 +102,7 @@ for i = 1:path_points
     %Rotating to new reference frame
     Rnew = rot45 * R;
 
-    %%Dont know why was changinh rotation of robot 1 again
+    %%Dont know why was changing rotation of robot 1 again
 %     X_CSV(i, 4:7) = rotm2quat(Rnew);
 %     X_CSV(i, 11:14) = rotm2quat(R);
 

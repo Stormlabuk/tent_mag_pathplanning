@@ -19,6 +19,15 @@ for i = 1:8
     Ufit{i,:}=fit(x,Ubetween(i,:)','exp1');
 end
 
+%% Exponential Plots
+x = [1:10];
+
+for i = 2:10
+    y(i) = x(i-1)*(1 - exp(-(i/100)/500));
+end
+figure
+plot(x,y,'o')
+
 %% Plotting Field at each point in path
 figure();
 for i = 1:8

@@ -5,18 +5,22 @@ clear all
 addpath(genpath('actuation'));
 addpath(genpath('functions'));
 %addpath(genpath('/home/michael/Desktop/MATLAB Scripts/MagneticPlanner/robot_tools'));
-addpath(genpath('C:\Users\elmbr\OneDrive - University of Leeds\MagneticPlanner'));
+addpath(genpath('C:\Users\elmbr\OneDrive - University of Leeds\Publications\MagneticPlanner'));
 %%
 %All Coordinates are in sensor frame
 
 %Enter Desired End Effector Positions
-%Xdes = [[-0.35;     -1.02;   0.19;  827.4953;   145.5150;   -485.0500;  0.35;    1.02;   0.19;   -827.4953;  -145.5150;  -485.0500], ...
-%          [0.1909;   -0.1909; 0.00; -685.9643;  -685.9643;    0.0;      -0.1909;  0.1909; 0.00;    685.9643;   685.9643;   0.0], ...         %f2y
-%          [0.25;      0;      0.0;  -970.1;      0.0;         0.0;      -0.25;     0.0;   0.00;   -970.1;      0.0;        0.0], ...         %t1y
-%          [0.23;      0;     -0.23;   686.0814;  -0.062;      685.8472; -0.23;     0;     0.22;   -685.8472;   0.0904;    -686.0613], ...    %f1z
-%          [0.3;      0;       0.0;    0.;        -0.0;       -970.1;    -0.3;      0;     0.00;    0;          0.0;        970.1]];          %f1x
+Xdes = [[-0.35;     -1.02;    0.19;   827.4953;   145.5150;  -485.0500;  0.35;    1.02;     0.19;   -827.4953;  -145.5150;  -485.0500], ...
+         [0.1909;   -0.1909;  0.00;   685.9643;   685.9643;   0.0;      -0.1909;  0.1909;   0.00;   -685.9643;  -685.9643;   0.0], ...         %f2y
+         [0.35;      0;       0.0;    970.1;      0.0;        0.0;      -0.35;    0.0;      0.00;    970.1;      0.0;        0.0], ...         %t1y
+         [0.1909;    0;      -0.1909; -686.0814;   0.0;      -685.8472; -0.1909;  0;        0.1909;  685.8472;   0.0;        686.0613], ...    %f1z
+         [0.27;      0;       0.0;    0.;        -0.0;        970.1;    -0.27;    0;        0.00;    0;          0.0;       -970.1], ...       %f1x
+         [0.27;      0;       0.0;    0.;        -970.1;      0.0;      -0.27;    0;        0.00;    0;          970.1;      0.0], ...         %f2x
+         [0.1909;   -0.1909;  0.0;    0.;         0.0;        970.1;    -0.1909;  0.1909;   0.0;     0.;         0.0;        970.1;], ...      %t2x
+         [0.0;      -0.35;    0.0;    0.;        -970.1;      0.0;       0.0;     0.35;     0.0;     0.;        -970.1;      0.0  ] ...        %t1x
+         [0.0;      -0.27;    0.0;    0.;         0.0;       -970.1;     0.0;     0.27;     0.0;     0.;         0.0;        970.1;]];         %f1y 
 
-Xdes = [];
+% Xdes = [];
 
 %If no positions are given use desired Fields. 
 %U = [Bx,       By,        Bz,         dBxx,      dBxy,        dBxz,       dByy,       dByz,   mu1,    mu2]
@@ -145,7 +149,7 @@ for count = 1:numFields
     
     %% Analitical Solver for Pre Defined Path 
     
-    %Creating a field path by linearly interpolating
+    %Creating a field path 
     U_path = zeros(8, path_points);
     u_plan = zeros(6,path_points);
     
@@ -153,10 +157,25 @@ for count = 1:numFields
     X_CSV = zeros(path_points,14);
     origin = [1,0,0];
     
-    for i = 1:8
-       U_path(i,:) = linspace(Uc(i), Ud(i), path_points); 
+    %Linear field interpolation
+%     for i = 1:8
+%        U_path(i,:) = linspace(Uc(i), Ud(i), path_points);  %Creating a field path by linearly interpolating
+%     end
+
+    %Field path with a more exponential fit to field path instead of linear
+    for i =  1:8
+        U_path(i,1) = Uc(i);
+        U_path(i,2) = Uc(i) .* 0.4;
+        U_path(i,3) = Uc(i) .* 0.1;
+        U_path(i,4) = Uc(i) .* 0.05;
+        U_path(i,5) = Uc(i) .* 0.02;
+        U_path(i,6) = Ud(i) .* 0.6;
+        U_path(i,7) = Ud(i) .* 0.9;
+        U_path(i,8) = Ud(i) .* 0.95;
+        U_path(i,9) = Ud(i) .* 0.975;
+        U_path(i,10) = Ud(i);        
     end
-    
+
     [u_plan, X_planning, X_CSV] = analyticalMewSolve(Xc, Xd, X_planning, U_path);
 
     u_planFinal((path_points*(count-1) + 1):(path_points*count), :) =  u_plan';
@@ -195,9 +214,9 @@ for i = 1:8
         ylabel(strcat('$U_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
 
         if i <= 3
-            ylim([-0.01 0.01]);
+            ylim([-0.02 0.02]);
         else
-            ylim([-0.1 0.1]);
+            ylim([-0.2 0.2]);
         end
 
         if i == 1
@@ -205,6 +224,7 @@ for i = 1:8
         end        
 end
 sgtitle("Planned Field for Full Path", 'FontSize', 24)
+
 
 
 %% Plotting Forces and torques
@@ -241,7 +261,7 @@ S(6,4:8) = [-m(3), 0, m(1), -m(3), m(2)];
 w2_des = S*U_pathFinal;
 w2_plan = S*U_final(1:8,:);
 
-% Plotting
+%% Plotting Wrenches
 figure();
 for i = 1:6
     subplot(3, 2, i)
@@ -262,6 +282,17 @@ for i = 1:6
         if i == 1
             legend('Wrench', 'Desired', 'FontSize', 12)
         end        
+
+        if i <= 3
+            ylim([-0.03 0.03]);
+        else
+            ylim([-0.15 0.15]);
+        end
+
+        %Setting plot bakground to grey for axsis we cant control
+        if i == 3
+            set(gca,'color',[0.6235, 0.6235, 0.6235])
+        end
 end
 sgtitle("Planned Wrench w1 for Full Path", 'FontSize', 24)
 
@@ -278,12 +309,130 @@ for i = 1:6
         else
             ylabel(strcat('$f_', num2str(i-3),'$'), 'Interpreter', 'latex', 'FontSize', 14)
         end
-       
-
+      
         grid on;
 
         if i == 1
             legend('Wrench', 'Desired', 'FontSize', 12)
         end        
+
+        if i <= 3
+            ylim([-0.03 0.03]);
+        else
+            ylim([-0.15 0.15]);
+        end
+
+        %Setting plot bakground to grey for axsis we cant control
+        if i == 2 || i == 3 || i == 6
+            set(gca,'color',[0.6235, 0.6235, 0.6235])
+        end
 end
 sgtitle("Planned Wrench w2 for Full Path", 'FontSize', 24)
+
+%% Calculating Error between Desired and Actual
+
+% ---- Fields ---- 
+ErrField = zeros([size(U_pathFinal)]);
+for i = 1:8
+    ErrField(i,:) = abs((U_final(i,:) - U_pathFinal(i,:))); 
+end
+%norm Field Error
+NormErrField(1,:) = vecnorm(ErrField(1:3,:));
+%norm Gradient Error
+NormErrField(2,:) = vecnorm(ErrField(4:8,:));
+
+figure();
+for i = 1:10
+    subplot(5, 2, i)
+    if i < 9
+        plot(1:path_points*count, ErrField(i, :)', 'r', 'LineWidth', 1.0)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$ERROR U_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+    elseif i == 9
+        plot(1:path_points*count, NormErrField(i-8, :)', 'k', 'LineWidth', 1.0)
+        title('Norm Field Error', 'FontSize', 18)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$Norm B','$'), 'Interpreter', 'latex', 'FontSize', 14)
+    else
+        plot(1:path_points*count, NormErrField(i-8, :)', 'k', 'LineWidth', 1.0)
+        title('Norm Gradient Error', 'FontSize', 18)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$Norm dB','$'), 'Interpreter', 'latex', 'FontSize', 14)
+    end
+     
+end
+sgtitle("Error for Field", 'FontSize', 24)
+
+%  ---- Wrenches ----
+ErrWrench1 = zeros([size(w1_plan)]);
+ErrWrench2 = zeros([size(w2_plan)]);
+for i = 1:6
+    ErrWrench1(i,:) = abs((w1_plan(i,:) - w1_des(i,:))); 
+    ErrWrench2(i,:) = abs((w2_plan(i,:) - w2_des(i,:))); 
+end
+%norm Torque W1 Error
+NormWrench1(1,:) = vecnorm(ErrWrench1(1:3,:));
+%norm Force W1 Error
+NormWrench1(2,:) = vecnorm(ErrWrench1(4:6,:));
+
+%norm Torque W2 Error
+NormWrench2(1,:) = vecnorm(ErrWrench2(1:3,:));
+%norm Force W2 Error
+NormWrench2(2,:) = vecnorm(ErrWrench2(4:6,:));
+
+%Plotting Errors for Load Cell 1
+figure();
+for i = 1:8
+    subplot(5, 2, i)
+    if i < 7
+        plot(1:path_points*count, ErrWrench1(i, :)', 'r', 'LineWidth', 1.0)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$ERROR \omega_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+    elseif i == 7
+        plot(1:path_points*count, NormWrench1(i-6, :)', 'k', 'LineWidth', 1.0)
+        title('Norm Torque Error', 'FontSize', 18)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$Norm \tau','$'), 'Interpreter', 'latex', 'FontSize', 14)
+    else
+        plot(1:path_points*count, NormWrench1(i-6, :)', 'k', 'LineWidth', 1.0)
+        title('Norm Force Error', 'FontSize', 18)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$Norm f','$'), 'Interpreter', 'latex', 'FontSize', 14)
+    end
+
+    %Setting plot bakground to grey for axsis we cant control
+    if i == 3
+        set(gca,'color',[0.6235, 0.6235, 0.6235])
+    end
+     
+end
+sgtitle("Error for Load Cell 1", 'FontSize', 24)
+
+
+%Plotting Errors for Load Cell 2
+figure();
+for i = 1:8
+    subplot(5, 2, i)
+    if i < 7
+        plot(1:path_points*count, ErrWrench2(i, :)', 'r', 'LineWidth', 1.0)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$ERROR \omega_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+    elseif i == 7
+        plot(1:path_points*count, NormWrench2(i-6, :)', 'k', 'LineWidth', 1.0)
+        title('Norm Torque Error', 'FontSize', 18)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$Norm \tau','$'), 'Interpreter', 'latex', 'FontSize', 14)
+    else
+        plot(1:path_points*count, NormWrench2(i-6, :)', 'k', 'LineWidth', 1.0)
+        title('Norm Force Error', 'FontSize', 18)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$Norm f','$'), 'Interpreter', 'latex', 'FontSize', 14)
+    end
+
+    %Setting plot bakground to grey for axsis we cant control
+    if i == 2 || i == 3 || i == 6
+        set(gca,'color',[0.6235, 0.6235, 0.6235])
+    end
+     
+end
+sgtitle("Error for Load Cell 2", 'FontSize', 24)
