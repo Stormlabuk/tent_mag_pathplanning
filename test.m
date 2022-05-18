@@ -1,5 +1,5 @@
 %% TEST SCRIPT
-clear all
+%clear all
 close all
 
 Ud = [[0.0;     0.0;       0.0;        0.0;        0.0;        0.1;        0.0;        0.0;    970.1;  970.1], ...
@@ -30,23 +30,37 @@ plot(x,y,'o')
 
 %% Plotting Field at each point in path
 figure();
-for i = 1:8
-    subplot(4, 2, i)
-        plot(x, Ubetween(i, :)', 'o', 'LineWidth', 1.0)
-        hold on
-        plot(Ufit{i})
+for a = 1:3
+    for i = 1:8
+        subplot(4, 2, i)
 
-        xlabel('Points in Path (s)', 'FontSize', 14)
-        ylabel(strcat('$U_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+            if a ==1
+                plot(1:10, U_path(i,:), '--k', 'LineWidth', 1.0)
+            end
+            
+            plot(1:10, squeeze(U_intermediate(a, :,i)), 'LineWidth', 1.0)
+            hold on
 
-%         if i <= 3
-%             ylim([-0.01 0.01]);
-%         else
-%             ylim([-0.1 0.1]);
-%         end
-% 
-%         if i == 1
-%             legend('Path', 'Start', 'Desired', 'Path Followed', 'FontSize', 12)
-%         end        
+    
+            xlabel('Points in Path (s)', 'FontSize', 14)
+            ylabel(strcat('$U_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+    
+    %         if i <= 3
+    %             ylim([-0.01 0.01]);
+    %         else
+    %             ylim([-0.1 0.1]);
+    %         end
+    % 
+            if i == 1
+                legend('Original - rho', 'Original', 'Original + rho', 'FontSize', 12)
+            end        
+    end
 end
 sgtitle("Planned Field for Full Path", 'FontSize', 24)
+
+figure
+for i = 1:3
+    plot(Error_intermediateNorm(i,:));
+    hold on;
+end
+legend('Original - rho', 'Original', 'Original + rho', 'FontSize', 12)

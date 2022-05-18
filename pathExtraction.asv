@@ -96,7 +96,11 @@ for count = 1:numFields
     end
 
      %% Creating a Linear path in polar space
-    [X_planning, polarpath_1, polarpath_2] = pathCreate(Xc, Xd, path_points);
+   %[X_planning, polarpath_1, polarpath_2] = pathCreate(Xc, Xd, path_points);
+
+    %% Creating Multiple Linear paths in polar space
+    rhoDiff = 0.075;
+    [X_planning, polarpath_1, polarpath_2] = pathCreateVarriedRho(Xc, Xd, path_points, rhoDiff);
 
 
     %% Plotting Start (Current) and Desired Positions of both Magnets
@@ -120,11 +124,19 @@ for count = 1:numFields
     zlabel('z', 'FontSize',24);
     title(strcat('$Path_', num2str(count),' $'), 'Interpreter', 'latex', 'FontSize', 16)           
    
+
     %% Plotting Path
-    hold on
-    hf = plot3(polarpath_1(:,1), polarpath_1(:,2), polarpath_1(:,3), ':k', 'LineWidth',2);
-    hold on
-    hg = plot3(polarpath_2(:,1), polarpath_2(:,2), polarpath_2(:,3), ':g', 'LineWidth',2);
+    for z = 1:size(X_planning,1)
+        hold on
+        hf = plot3(polarpath_1(z,:,1), polarpath_1(z,:,2), polarpath_1(z,:,3), ':k', 'LineWidth',2);
+        hold on
+        hg = plot3(polarpath_2(z,:,1), polarpath_2(z,:,2), polarpath_2(z,:,3), ':g', 'LineWidth',2);
+    end
+    
+%     hold on
+%     hf = plot3(polarpath_1(:,1), polarpath_1(:,2), polarpath_1(:,3), ':k', 'LineWidth',2);
+%     hold on
+%     hg = plot3(polarpath_2(:,1), polarpath_2(:,2), polarpath_2(:,3), ':g', 'LineWidth',2);
     
     %plotting the 0-axis
     hh = plot3(linspace(-1,1,100), zeros([1,100]), zeros([1,100]), 'k:');
@@ -140,12 +152,12 @@ for count = 1:numFields
     end
    
     
-    %% Getting field at everypoint in path 
-    U_path = zeros(10, path_points);
-    
-    for a = 1:path_points
-        U_path(:,a) = field(X_planning(a,:));
-    end
+%     %% Getting field at everypoint in path 
+%     U_path = zeros(10, path_points);
+%     
+%     for a = 1:path_points
+%         U_path(:,a) = field(X_planning(2,a,:));
+%     end
     
     %% Analitical Solver for Pre Defined Path 
     
@@ -165,10 +177,10 @@ for count = 1:numFields
     %Field path with a more exponential fit to field path instead of linear
     for i =  1:8
         U_path(i,1) = Uc(i);
-        U_path(i,2) = Uc(i) .* 0.4;
-        U_path(i,3) = Uc(i) .* 0.1;
-        U_path(i,4) = Uc(i) .* 0.05;
-        U_path(i,5) = Uc(i) .* 0.02;
+        U_path(i,2) = Uc(i) .* 0.6;
+        U_path(i,3) = Uc(i) .* 0.3;
+        U_path(i,4) = Uc(i) .* 0.15;
+        U_path(i,5) = Uc(i) .* 0.05;
         U_path(i,6) = Ud(i) .* 0.6;
         U_path(i,7) = Ud(i) .* 0.9;
         U_path(i,8) = Ud(i) .* 0.95;
@@ -176,7 +188,27 @@ for count = 1:numFields
         U_path(i,10) = Ud(i);        
     end
 
-    [u_plan, X_planning, X_CSV] = analyticalMewSolve(Xc, Xd, X_planning, U_path);
+    % Solving for each of the possible paths and seeing which as the lower
+    % error
+    for z = 1:size(X_planning,1)
+        X_intermediate(:,:) = X_planning(z,:,:);
+        [u_plan_intermediate(z,:,:), X_intermediate(:,:), X_CSV_intermediate(z,:,:)] = analyticalMewSolve(Xc, Xd, squeeze(X_planning(z,:,:)), U_path);
+        for zz = 1:path_points
+            U_intermediate(z,zz,:) = field(X_planning(z,zz,:));
+            Error_intermediate(z, zz, :) = abs(U_path(:,zz) - squeeze(U_intermediate(z,zz,1:8)));
+            Error_intermediateNorm(z,zz) = norm(squeeze(Error_intermediate(z, zz, :)));
+        end
+    end
+
+    %Chosing path which gave the least error for each
+    for zz = 1:path_points
+        [~,I] = min(Error_intermediateNorm(:,1));
+        u_plan(:,zz) = squeeze(u_plan_intermediate(I,:,zz));
+
+        X_planningError = squeeze(X_planning(i,zz,:));
+
+
+    end
 
     u_planFinal((path_points*(count-1) + 1):(path_points*count), :) =  u_plan';
     X_planningFinal((path_points*(count-1) + 1):(path_points*count), :) = X_planning;
@@ -188,6 +220,7 @@ for count = 1:numFields
     Ud_plotFinal(:, (path_points*(count-1) + 1):(path_points*count)) = Ud_plot;
     U_pathFinal(:, (path_points*(count-1) + 1):(path_points*count)) = U_path;
 
+    
 
 end
 
@@ -309,8 +342,7 @@ for i = 1:6
         else
             ylabel(strcat('$f_', num2str(i-3),'$'), 'Interpreter', 'latex', 'FontSize', 14)
         end
-       
-
+      
         grid on;
 
         if i == 1
@@ -351,12 +383,12 @@ for i = 1:10
         ylabel(strcat('$ERROR U_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
     elseif i == 9
         plot(1:path_points*count, NormErrField(i-8, :)', 'k', 'LineWidth', 1.0)
-        title('Norm Field Error')
+        title('Norm Field Error', 'FontSize', 18)
         xlabel('Points in Path (s)', 'FontSize', 14)
         ylabel(strcat('$Norm B','$'), 'Interpreter', 'latex', 'FontSize', 14)
     else
         plot(1:path_points*count, NormErrField(i-8, :)', 'k', 'LineWidth', 1.0)
-        title('Norm Gradient Error')
+        title('Norm Gradient Error', 'FontSize', 18)
         xlabel('Points in Path (s)', 'FontSize', 14)
         ylabel(strcat('$Norm dB','$'), 'Interpreter', 'latex', 'FontSize', 14)
     end
@@ -381,25 +413,59 @@ NormWrench2(1,:) = vecnorm(ErrWrench2(1:3,:));
 %norm Force W2 Error
 NormWrench2(2,:) = vecnorm(ErrWrench2(4:6,:));
 
-%pl
+%Plotting Errors for Load Cell 1
 figure();
 for i = 1:8
     subplot(5, 2, i)
-    if i < 9
-        plot(1:path_points*count, ErrField(i, :)', 'r', 'LineWidth', 1.0)
+    if i < 7
+        plot(1:path_points*count, ErrWrench1(i, :)', 'r', 'LineWidth', 1.0)
         xlabel('Points in Path (s)', 'FontSize', 14)
-        ylabel(strcat('$ERROR U_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
-    elseif i == 9
-        plot(1:path_points*count, NormErrField(i-8, :)', 'r', 'LineWidth', 1.0)
-        title('Norm Field Error')
+        ylabel(strcat('$ERROR \omega_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+    elseif i == 7
+        plot(1:path_points*count, NormWrench1(i-6, :)', 'k', 'LineWidth', 1.0)
+        title('Norm Torque Error', 'FontSize', 18)
         xlabel('Points in Path (s)', 'FontSize', 14)
-        ylabel(strcat('$Norm B','$'), 'Interpreter', 'latex', 'FontSize', 14)
+        ylabel(strcat('$Norm \tau','$'), 'Interpreter', 'latex', 'FontSize', 14)
     else
-        plot(1:path_points*count, NormErrField(i-8, :)', 'r', 'LineWidth', 1.0)
-        title('Norm Gradient Error')
+        plot(1:path_points*count, NormWrench1(i-6, :)', 'k', 'LineWidth', 1.0)
+        title('Norm Force Error', 'FontSize', 18)
         xlabel('Points in Path (s)', 'FontSize', 14)
-        ylabel(strcat('$Norm dB','$'), 'Interpreter', 'latex', 'FontSize', 14)
+        ylabel(strcat('$Norm f','$'), 'Interpreter', 'latex', 'FontSize', 14)
+    end
+
+    %Setting plot bakground to grey for axsis we cant control
+    if i == 3
+        set(gca,'color',[0.6235, 0.6235, 0.6235])
     end
      
 end
-sgtitle("Error for Field", 'FontSize', 24)
+sgtitle("Error for Load Cell 1", 'FontSize', 24)
+
+
+%Plotting Errors for Load Cell 2
+figure();
+for i = 1:8
+    subplot(5, 2, i)
+    if i < 7
+        plot(1:path_points*count, ErrWrench2(i, :)', 'r', 'LineWidth', 1.0)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$ERROR \omega_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+    elseif i == 7
+        plot(1:path_points*count, NormWrench2(i-6, :)', 'k', 'LineWidth', 1.0)
+        title('Norm Torque Error', 'FontSize', 18)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$Norm \tau','$'), 'Interpreter', 'latex', 'FontSize', 14)
+    else
+        plot(1:path_points*count, NormWrench2(i-6, :)', 'k', 'LineWidth', 1.0)
+        title('Norm Force Error', 'FontSize', 18)
+        xlabel('Points in Path (s)', 'FontSize', 14)
+        ylabel(strcat('$Norm f','$'), 'Interpreter', 'latex', 'FontSize', 14)
+    end
+
+    %Setting plot bakground to grey for axsis we cant control
+    if i == 2 || i == 3 || i == 6
+        set(gca,'color',[0.6235, 0.6235, 0.6235])
+    end
+     
+end
+sgtitle("Error for Load Cell 2", 'FontSize', 24)

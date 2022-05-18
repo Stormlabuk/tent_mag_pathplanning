@@ -1,4 +1,4 @@
-%% Main to Plan the Path 
+%% Main to Plan the Path - Gives Multiple Paths as Option and Allows Planner to Chose Best
 close all
 clear all
 %Adding folders and subfolders to path
@@ -95,9 +95,6 @@ for count = 1:numFields
         Ud = field(Xd);
     end
 
-     %% Creating a Linear path in polar space
-    [X_planning, polarpath_1, polarpath_2] = pathCreate(Xc, Xd, path_points);
-
 
     %% Plotting Start (Current) and Desired Positions of both Magnets
     figure(1);
@@ -120,43 +117,18 @@ for count = 1:numFields
     zlabel('z', 'FontSize',24);
     title(strcat('$Path_', num2str(count),' $'), 'Interpreter', 'latex', 'FontSize', 16)           
    
-    %% Plotting Path
-    hold on
-    hf = plot3(polarpath_1(:,1), polarpath_1(:,2), polarpath_1(:,3), ':k', 'LineWidth',2);
-    hold on
-    hg = plot3(polarpath_2(:,1), polarpath_2(:,2), polarpath_2(:,3), ':g', 'LineWidth',2);
-    
-    %plotting the 0-axis
-    hh = plot3(linspace(-1,1,100), zeros([1,100]), zeros([1,100]), 'k:');
-    hi = plot3(zeros([1,100]), linspace(-1,1,100), zeros([1,100]), 'k:');
-    hj = plot3(zeros([1,100]), zeros([1,100]), linspace(-1,1,100), 'k:');
-    
-    grid on;
-    
-    if count ==1
-        lgd = legend([ha hb hc hd he hf hg], 'P1_{Current}','P2_{Current}','P1_{Desired}','P2_{Desired}', 'WorkSpace Center', 'Path 1', 'Path 2');
-        lgd.FontSize = 14;
-        sgtitle("Paths to be Taken", 'FontSize', 24)
-    end
-   
-    
-    %% Getting field at everypoint in path 
-    U_path = zeros(10, path_points);
-    
-    % Getting the field if Orientation of magnet was 50% of Uc and 50% of Ud
-    for a = 1:path_points
-        U_path(:,a) = field(X_planning(a,:));
-    end
-    
+  
+    %% Creating a Linear path in polar space
+%     [X_planning, polarpath_1, polarpath_2] = pathCreate(Xc, Xd, path_points);
+
+     %% Creating Multiple paths in polar space
+    rhoDiff = 0.1; %Radius offset of the 3 diff paths created
+    [X_planning, polarpathVarried_1, polarpathVarried_2] = pathCreateVarriedRho(Xc, Xd, path_points, rhoDiff);
+
+        
     %% Analitical Solver for Pre Defined Path 
-    
     %Creating a field path 
     U_path = zeros(8, path_points);
-    u_plan = zeros(6,path_points);
-    
-    % Creating a Vector X to write to CSV
-    X_CSV = zeros(path_points,14);
-    origin = [1,0,0];
     
     %Linear field interpolation
 %     for i = 1:8
@@ -177,20 +149,130 @@ for count = 1:numFields
         U_path(i,10) = Ud(i);        
     end
 
-    [u_plan, X_planning, X_CSV] = analyticalMewSolve(Xc, Xd, X_planning, U_path);
-
-    u_planFinal((path_points*(count-1) + 1):(path_points*count), :) =  u_plan';
-    X_planningFinal((path_points*(count-1) + 1):(path_points*count), :) = X_planning;
-    X_CSVFinal((path_points*(count-1) + 1):(path_points*count), :) = X_CSV;
+    %Solving for mew for each path and chosing one with lowwest error
+    X_planningMewSolve = zeros(size(X_planning));
+    u_plan = zeros(size(X_planning,1), 6, path_points);
     
+    % Creating a Vector X to write to CSV
+    X_CSV = zeros(size(X_planning,1), path_points,14);
+    U_varriedPaths = zeros(size(X_planning,1), 10, path_points);
+
+    for i = 1:size(X_planning,1)
+        [u_plan(i,:,:), X_planningMewSolve(i,:,:), X_CSV(i,:,:)] = analyticalMewSolve(Xc, Xd, squeeze(X_planning(i,:,:)), U_path);
+        %Getting Fields for each path
+        for a = 1:path_points
+            U_varriedPaths(i,:,a) = field(squeeze(X_planningMewSolve(i,a,:)));
+         end
+    end
+
+    %Calculating the Error at each point
+    error_pathVarried = zeros(size(X_planningMewSolve,1), 8, path_points);
+    normError_pathVarried = zeros(size(X_planningMewSolve,1), path_points);
+
+    indexChosen = zeros(1,path_points);
+    for i = 1:path_points
+        %For each path
+        for a = 1:size(X_planningMewSolve,1)
+            error_pathVarried(a,:,i) = abs(U_varriedPaths(a,1:8,i) - U_path(:,i)');
+            normError_pathVarried(a,i) = norm(error_pathVarried(a,:,i));
+        end
+        [~,indexChosen(i)] = min(normError_pathVarried(:,i));
+        u_planFinal((i + (count-1)*path_points), :) =  squeeze(u_plan(indexChosen(i),:,i));
+        X_planningFinal((i + (count-1)*path_points), :) = squeeze(X_planningMewSolve(indexChosen(i),i,:));
+        X_CSVFinal((i + (count-1)*path_points), :) = squeeze(X_CSV(indexChosen(i),i,:));
+
+        polarpath_1(i,:) = squeeze(polarpathVarried_1(indexChosen(i),i,:));
+        polarpath_2(i,:) = squeeze(polarpathVarried_2(indexChosen(i),i,:));
+
+    end
+
     Uc_plot = repmat(Uc, 1, path_points);
     Ud_plot = repmat(Ud, 1, path_points);
     Uc_plotFinal(:, (path_points*(count-1) + 1):(path_points*count)) = Uc_plot;
     Ud_plotFinal(:, (path_points*(count-1) + 1):(path_points*count)) = Ud_plot;
     U_pathFinal(:, (path_points*(count-1) + 1):(path_points*count)) = U_path;
+    
+ 
+%      %Plotting Fields for each path
+%     figure();
+%     for a = 1:3
+%         for i = 1:8
+%             subplot(4, 2, i)
+%     
+%                 if a ==1
+%                     plot(1:10, U_path(i,:), '--k', 'LineWidth', 1.0)
+%                     hold on;
+%                 end
+%                 
+%                 plot(1:10, squeeze(U_varriedPaths(a, i,:)), 'LineWidth', 1.0)
+%                 hold on
+%     
+%         
+%                 xlabel('Points in Path (s)', 'FontSize', 14)
+%                 ylabel(strcat('$U_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+%         
+%         %         if i <= 3
+%         %             ylim([-0.01 0.01]);
+%         %         else
+%         %             ylim([-0.1 0.1]);
+%         %         end
+%         % 
+%                 if i == 1
+%                     legend('Desired','Original - rho', 'Original', 'Original + rho', 'FontSize', 12)
+%                 end        
+%         end
+%     end
+%     sgtitle("Fields for Each Path", 'FontSize', 24)
+% 
+%     %Plotting Errors for each path
+%     figure();
+%     for a = 1:3
+%         for i = 1:8
+%             subplot(4, 2, i)
+%     
+%             plot(1:10, squeeze(error_pathVarried(a, i,:)), 'LineWidth', 1.0)
+%             hold on
+% 
+%             xlabel('Points in Path (s)', 'FontSize', 14)
+%             ylabel(strcat('$U_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
+%     
+%             if i == 1
+%                 legend('Original - rho', 'Original', 'Original + rho', 'FontSize', 12)
+%             end        
+%         end
+%     end
+%     sgtitle("Errors for Each Path", 'FontSize', 24)
+% 
+%     figure();
+%     for i = 1:3
+%         plot(1:10, normError_pathVarried(i,:))
+%         hold on;
+%     end
+%     legend('Original - rho', 'Original', 'Original + rho', 'FontSize', 12)
+%     title("Norm Errors for Each Path", 'FontSize', 24)
 
+     %% Plotting Path Chosen
+    hold on
+    hf = plot3(polarpath_1(:,1), polarpath_1(:,2), polarpath_1(:,3), ':k', 'LineWidth',2);
+    hold on
+    hg = plot3(polarpath_2(:,1), polarpath_2(:,2), polarpath_2(:,3), ':g', 'LineWidth',2);
+    
+    %plotting the 0-axis
+    hh = plot3(linspace(-1,1,100), zeros([1,100]), zeros([1,100]), 'k:');
+    hi = plot3(zeros([1,100]), linspace(-1,1,100), zeros([1,100]), 'k:');
+    hj = plot3(zeros([1,100]), zeros([1,100]), linspace(-1,1,100), 'k:');
+    
+    grid on;
+    
+    if count ==1
+        lgd = legend([ha hb hc hd he hf hg], 'P1_{Current}','P2_{Current}','P1_{Desired}','P2_{Desired}', 'WorkSpace Center', 'Path 1', 'Path 2');
+        lgd.FontSize = 14;
+        sgtitle("Paths to be Taken", 'FontSize', 24)
+    end
 
 end
+
+
 
 
 %% Plotting Field at each point in path
