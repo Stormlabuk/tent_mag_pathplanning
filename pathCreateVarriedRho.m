@@ -99,4 +99,56 @@ X_planning(3,1,:) = X_planning(2,1,:);
 %End
 X_planning(1,end,:) = X_planning(2,end,:);
 X_planning(3,end,:) = X_planning(2,end,:);
+
+%Returning 9 Different Versions of X by paring different paths for each
+%robot (example -rho for robot 1 and +rho for robot 2).
+X_planningReturn = zeros(12, path_points, 12);
+%TODO: Automate this
+%robot 1
+X_planningReturn(1,:,1:6) = X_planning(1,:,1:6);
+X_planningReturn(2,:,1:6) = X_planning(1,:,1:6);
+X_planningReturn(3,:,1:6) = X_planning(1,:,1:6);
+X_planningReturn(4,:,1:6) = X_planning(2,:,1:6);
+X_planningReturn(5,:,1:6) = X_planning(2,:,1:6);
+X_planningReturn(6,:,1:6) = X_planning(2,:,1:6);
+X_planningReturn(7,:,1:6) = X_planning(3,:,1:6);
+X_planningReturn(8,:,1:6) = X_planning(3,:,1:6);
+X_planningReturn(9,:,1:6) = X_planning(3,:,1:6);
+
+%robot2
+X_planningReturn(1,:,7:12) = X_planning(1,:,7:12);
+X_planningReturn(2,:,7:12) = X_planning(2,:,7:12);
+X_planningReturn(3,:,7:12) = X_planning(3,:,7:12);
+X_planningReturn(4,:,7:12) = X_planning(1,:,7:12);
+X_planningReturn(5,:,7:12) = X_planning(2,:,7:12);
+X_planningReturn(6,:,7:12) = X_planning(3,:,7:12);
+X_planningReturn(7,:,7:12) = X_planning(1,:,7:12);
+X_planningReturn(8,:,7:12) = X_planning(2,:,7:12);
+X_planningReturn(9,:,7:12) = X_planning(3,:,7:12);
+
+% %Doing Same for Polar Path Points
+% polarpathReturn_1 = zeros(9,path_points,3);
+% polarpathReturn_2 = zeros(9,path_points,3);
+% 
+% polarpathReturn_1(1,:,:) = polarpath_1(1,:,:);
+% polarpathReturn_1(2,:,:) = polarpath_1(1,:,:);
+% polarpathReturn_1(3,:,:) = polarpath_1(1,:,:);
+% polarpathReturn_1(4,:,:) = polarpath_1(2,:,:);
+% polarpathReturn_1(5,:,:) = polarpath_1(2,:,:);
+% polarpathReturn_1(6,:,:) = polarpath_1(2,:,:);
+% polarpathReturn_1(7,:,:) = polarpath_1(3,:,:);
+% polarpathReturn_1(8,:,:) = polarpath_1(3,:,:);
+% polarpathReturn_1(9,:,:) = polarpath_1(3,:,:);
+% 
+% polarpathReturn_2(1,:,:) = polarpath_2(1,:,:);
+% polarpathReturn_2(2,:,:) = polarpath_2(2,:,:);
+% polarpathReturn_2(3,:,:) = polarpath_2(3,:,:);
+% polarpathReturn_2(4,:,:) = polarpath_2(1,:,:);
+% polarpathReturn_2(5,:,:) = polarpath_2(2,:,:);
+% polarpathReturn_2(6,:,:) = polarpath_2(3,:,:);
+% polarpathReturn_2(7,:,:) = polarpath_2(1,:,:);
+% polarpathReturn_2(8,:,:) = polarpath_2(2,:,:);
+% polarpathReturn_2(9,:,:) = polarpath_2(3,:,:);
+
+
 end

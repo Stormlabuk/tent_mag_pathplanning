@@ -137,16 +137,27 @@ for count = 1:numFields
 
     %Field path with a more exponential fit to field path instead of linear
     for i =  1:8
+%         U_path(i,1) = Uc(i);
+%         U_path(i,2) = Uc(i) .* 0.4;
+%         U_path(i,3) = Uc(i) .* 0.1;
+%         U_path(i,4) = Uc(i) .* 0.05;
+%         U_path(i,5) = Uc(i) .* 0.02;
+%         U_path(i,6) = Ud(i) .* 0.6;
+%         U_path(i,7) = Ud(i) .* 0.9;
+%         U_path(i,8) = Ud(i) .* 0.95;
+%         U_path(i,9) = Ud(i) .* 0.975;
+%         U_path(i,10) = Ud(i);        
+
         U_path(i,1) = Uc(i);
-        U_path(i,2) = Uc(i) .* 0.4;
-        U_path(i,3) = Uc(i) .* 0.1;
-        U_path(i,4) = Uc(i) .* 0.05;
-        U_path(i,5) = Uc(i) .* 0.02;
-        U_path(i,6) = Ud(i) .* 0.6;
-        U_path(i,7) = Ud(i) .* 0.9;
-        U_path(i,8) = Ud(i) .* 0.95;
-        U_path(i,9) = Ud(i) .* 0.975;
-        U_path(i,10) = Ud(i);        
+        U_path(i,2) = Uc(i) .* 0.9;
+        U_path(i,3) = Uc(i) .* 0.75;
+        U_path(i,4) = Uc(i) .* 0.25;
+        U_path(i,5) = Uc(i) .* 0.1;
+        U_path(i,6) = Ud(i) .* 0.1;
+        U_path(i,7) = Ud(i) .* 0.4;
+        U_path(i,8) = Ud(i) .* 0.8;
+        U_path(i,9) = Ud(i) .* 0.95;
+        U_path(i,10) = Ud(i);     
     end
 
     %Solving for mew for each path and chosing one with lowwest error
@@ -195,7 +206,7 @@ for count = 1:numFields
  
 %      %Plotting Fields for each path
 %     figure();
-%     for a = 1:3
+%     for a = 1:9
 %         for i = 1:8
 %             subplot(4, 2, i)
 %     
@@ -226,12 +237,20 @@ for count = 1:numFields
 % 
 %     %Plotting Errors for each path
 %     figure();
-%     for a = 1:3
+%     for a = 1:9
 %         for i = 1:8
 %             subplot(4, 2, i)
-%     
-%             plot(1:10, squeeze(error_pathVarried(a, i,:)), 'LineWidth', 1.0)
-%             hold on
+%             
+%             if (a < 4)
+%                 plot(1:10, squeeze(error_pathVarried(a, i,:)), 'b', 'LineWidth', a)
+%                 hold on
+%             elseif (a < 7)
+%                 plot(1:10, squeeze(error_pathVarried(a, i,:)), 'r', 'LineWidth', a - 3)
+%                 hold on
+%             else
+%                 plot(1:10, squeeze(error_pathVarried(a, i,:)), 'k', 'LineWidth', a - 6)
+%                 hold on
+%             end
 % 
 %             xlabel('Points in Path (s)', 'FontSize', 14)
 %             ylabel(strcat('$U_', num2str(i),'$'), 'Interpreter', 'latex', 'FontSize', 14)
@@ -244,7 +263,7 @@ for count = 1:numFields
 %     sgtitle("Errors for Each Path", 'FontSize', 24)
 % 
 %     figure();
-%     for i = 1:3
+%     for i = 1:9
 %         plot(1:10, normError_pathVarried(i,:))
 %         hold on;
 %     end
