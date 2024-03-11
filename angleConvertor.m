@@ -1,7 +1,7 @@
 %% Angle Converstion Script
 
 %Rotations in robot (old) frame
-p = [0.21	0.21 	0.0];
+p = [-0.2333	-0.2333	0];
 q = [0	-0.7071	0	0.7071];
 R = quat2rotm(q);
 

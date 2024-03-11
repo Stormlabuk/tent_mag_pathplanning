@@ -6,8 +6,8 @@ clc
 rmpath(genpath('functions'))
 addpath(genpath('functions'))
 
-U = [0.01*[0; 0; 0];
-    0.1*[0; 0; 0; 0; 1]]
+U = [0.01*[1; 0; 0];
+    0.1*[0; 0; 0; 0; 0]]
 
 X = fieldSearch(U, eps);
 

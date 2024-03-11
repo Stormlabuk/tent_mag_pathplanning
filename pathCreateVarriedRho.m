@@ -34,6 +34,12 @@ rho_c2 = p_c2 - rhoDiff;
 rho_d1 = p_d1 - rhoDiff;
 rho_d2 = p_d2 - rhoDiff;
 
+% %Preparing initial value of rho
+% rho_c1 = z_c1 - rhoDiff;
+% rho_c2 = z_c2 - rhoDiff;
+% rho_d1 = z_d1 - rhoDiff;
+% rho_d2 = z_d2 - rhoDiff;
+
 % Creating Vector X 
 X_planning = zeros(3, path_points, 12);
 
@@ -48,6 +54,9 @@ for i = 1:3
     rho_d1 = rho_d1 + rhoDiff;
     rho_d2 = rho_d2 + rhoDiff;
     
+%     p_path1 = linspace(p_c1, p_d1, path_points);
+%     p_path2 = linspace(p_c2, p_d2, path_points);
+
     %theta is the counterclockwise angle in the x-y plane measured in radians from the positive x-axis.
     theta_path1 = linspace(theta_c1, theta_d1, path_points);
     theta_path2 = linspace(theta_c2, theta_d2, path_points);
@@ -55,6 +64,15 @@ for i = 1:3
     %z is the height above the x-y plane
     z_polar_path1 = linspace(z_c1,z_d1,path_points);
     z_polar_path2 = linspace(z_c2,z_d2,path_points);
+
+%     %z is the height above the x-y plane
+%     z_polar_path1 = linspace(rho_c1,rho_d1,path_points);
+%     z_polar_path2 = linspace(rho_c2,rho_d2,path_points);
+% 
+%     rho_c1 = rho_c1 + rhoDiff;
+%     rho_c2 = rho_c2 + rhoDiff;
+%     rho_d1 = rho_d1 + rhoDiff;
+%     rho_d2 = rho_d2 + rhoDiff;
     
     % Creating a path (polar)
     [x_polar1 ,y_polar1 ,z_polar1] = pol2cart(theta_path1,p_path1,z_polar_path1);
@@ -100,31 +118,33 @@ X_planning(3,1,:) = X_planning(2,1,:);
 X_planning(1,end,:) = X_planning(2,end,:);
 X_planning(3,end,:) = X_planning(2,end,:);
 
-%Returning 9 Different Versions of X by paring different paths for each
-%robot (example -rho for robot 1 and +rho for robot 2).
-X_planningReturn = zeros(12, path_points, 12);
-%TODO: Automate this
-%robot 1
-X_planningReturn(1,:,1:6) = X_planning(1,:,1:6);
-X_planningReturn(2,:,1:6) = X_planning(1,:,1:6);
-X_planningReturn(3,:,1:6) = X_planning(1,:,1:6);
-X_planningReturn(4,:,1:6) = X_planning(2,:,1:6);
-X_planningReturn(5,:,1:6) = X_planning(2,:,1:6);
-X_planningReturn(6,:,1:6) = X_planning(2,:,1:6);
-X_planningReturn(7,:,1:6) = X_planning(3,:,1:6);
-X_planningReturn(8,:,1:6) = X_planning(3,:,1:6);
-X_planningReturn(9,:,1:6) = X_planning(3,:,1:6);
 
-%robot2
-X_planningReturn(1,:,7:12) = X_planning(1,:,7:12);
-X_planningReturn(2,:,7:12) = X_planning(2,:,7:12);
-X_planningReturn(3,:,7:12) = X_planning(3,:,7:12);
-X_planningReturn(4,:,7:12) = X_planning(1,:,7:12);
-X_planningReturn(5,:,7:12) = X_planning(2,:,7:12);
-X_planningReturn(6,:,7:12) = X_planning(3,:,7:12);
-X_planningReturn(7,:,7:12) = X_planning(1,:,7:12);
-X_planningReturn(8,:,7:12) = X_planning(2,:,7:12);
-X_planningReturn(9,:,7:12) = X_planning(3,:,7:12);
+
+%% Returning 9 Different Versions of X by paring different paths for each
+% %robot (example -rho for robot 1 and +rho for robot 2).
+% X_planningReturn = zeros(12, path_points, 12);
+% %TODO: Automate this
+% %robot 1
+% X_planningReturn(1,:,1:6) = X_planning(1,:,1:6);
+% X_planningReturn(2,:,1:6) = X_planning(1,:,1:6);
+% X_planningReturn(3,:,1:6) = X_planning(1,:,1:6);
+% X_planningReturn(4,:,1:6) = X_planning(2,:,1:6);
+% X_planningReturn(5,:,1:6) = X_planning(2,:,1:6);
+% X_planningReturn(6,:,1:6) = X_planning(2,:,1:6);
+% X_planningReturn(7,:,1:6) = X_planning(3,:,1:6);
+% X_planningReturn(8,:,1:6) = X_planning(3,:,1:6);
+% X_planningReturn(9,:,1:6) = X_planning(3,:,1:6);
+% 
+% %robot2
+% X_planningReturn(1,:,7:12) = X_planning(1,:,7:12);
+% X_planningReturn(2,:,7:12) = X_planning(2,:,7:12);
+% X_planningReturn(3,:,7:12) = X_planning(3,:,7:12);
+% X_planningReturn(4,:,7:12) = X_planning(1,:,7:12);
+% X_planningReturn(5,:,7:12) = X_planning(2,:,7:12);
+% X_planningReturn(6,:,7:12) = X_planning(3,:,7:12);
+% X_planningReturn(7,:,7:12) = X_planning(1,:,7:12);
+% X_planningReturn(8,:,7:12) = X_planning(2,:,7:12);
+% X_planningReturn(9,:,7:12) = X_planning(3,:,7:12);
 
 % %Doing Same for Polar Path Points
 % polarpathReturn_1 = zeros(9,path_points,3);

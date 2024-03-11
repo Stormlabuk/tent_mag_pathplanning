@@ -1,4 +1,4 @@
-function [u_plan, X_planning, X_CSV] = analyticalMewSolve(Xc, Xd, X_planning, U_path)
+function [u_plan, X_planning, X_CSV, X_CSV_mu] = analyticalMewSolve(Xc, Xd, X_planning, U_path)
 %Function to solve for mew analytically for a given field and path
 
 [path_points, ~] = size(X_planning);   %number of points in path
@@ -6,9 +6,16 @@ u_plan = zeros(6,path_points);
 
 % Creating a Vector X to write to CSV
 X_CSV = zeros(path_points,14);
+% Same Vector X but returning mu instead of quaternions
+X_CSV_mu = zeros(path_points,12);
+
 origin = [1,0,0];
 
-rot45 = rotz(-45);
+%Rotating by 45 deg
+% rot45 = rotz(-45);
+
+%No rotation
+rot45 = rotz(0);
 
 %finding mew analytically
 mu0 = 4*pi*1e-7; % air magnetic permeability
@@ -73,6 +80,23 @@ for i = 1:path_points
     %Vector to write to CSV -- Rotating to New Reference Frame
     X_CSV(i,1:3) = rot45*X_planning(i,1:3)';
     X_CSV(i,8:10) = rot45*X_planning(i,7:9)';
+
+    % For  CSV with mu (everything rotated by 45 degree (to world frame))
+    %position
+    X_CSV_mu(i,1:3) = rot45*X_planning(i,1:3)';
+    X_CSV_mu(i,7:9) = rot45*X_planning(i,7:9)';
+    %rotation
+    X_CSV_mu(i,4:6) = rot45*u_plan(1:3,i);
+    X_CSV_mu(i,10:12) = rot45*u_plan(4:6,i);
+
+%     % For  CSV with mu (not rotated)
+%     %position
+%     X_CSV_mu(i,1:3) = X_planning(i,1:3)';
+%     X_CSV_mu(i,7:9) = X_planning(i,7:9)';
+%     %rotation
+%     X_CSV_mu(i,4:6) = u_plan(1:3,i);
+%     X_CSV_mu(i,10:12) = u_plan(4:6,i);
+
     %changing from moment to rot mat
     C = cross(origin, u_plan(1:3,i)) ; 
     D = dot(origin, u_plan(1:3,i)) ;
